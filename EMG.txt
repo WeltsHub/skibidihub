@@ -137,7 +137,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 end)
 
--- Keybind RightShift → GUI show/hide
+-- Keybind J → GUI show/hide
 local guiVisible = true
 UIS.InputBegan:Connect(function(input, gp)
 	if gp then return end
