@@ -1,0 +1,148 @@
+-- Emoji Rain Fun GUI
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main Frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0,300,0,200)
+frame.Position = UDim2.new(0,50,0,50)
+frame.BackgroundColor3 = Color3.fromRGB(50,50,50)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0,15)
+frameCorner.Parent = frame
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0,200,0,20)
+title.Position = UDim2.new(0,10,0,10)
+title.BackgroundTransparency = 1
+title.Text = "Emoji Rain"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = frame
+
+-- Speed Slider
+local sliderLabel = Instance.new("TextLabel")
+sliderLabel.Size = UDim2.new(0,280,0,20)
+sliderLabel.Position = UDim2.new(0,10,0,40)
+sliderLabel.BackgroundTransparency = 1
+sliderLabel.Text = "Speed: 1"
+sliderLabel.TextColor3 = Color3.fromRGB(255,255,255)
+sliderLabel.Font = Enum.Font.Gotham
+sliderLabel.TextSize = 14
+sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+sliderLabel.Parent = frame
+
+local sliderBar = Instance.new("Frame")
+sliderBar.Size = UDim2.new(0,280,0,20)
+sliderBar.Position = UDim2.new(0,10,0,65)
+sliderBar.BackgroundColor3 = Color3.fromRGB(80,80,80)
+sliderBar.Parent = frame
+
+local sliderCorner = Instance.new("UICorner")
+sliderCorner.CornerRadius = UDim.new(0,10)
+sliderCorner.Parent = sliderBar
+
+local handle = Instance.new("Frame")
+handle.Size = UDim2.new(0,20,1,0)
+handle.Position = UDim2.new(0,0,0,0)
+handle.BackgroundColor3 = Color3.fromRGB(200,200,200)
+handle.Parent = sliderBar
+
+local handleCorner = Instance.new("UICorner")
+handleCorner.CornerRadius = UDim.new(0,10)
+handleCorner.Parent = handle
+
+local dragging = false
+handle.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+end)
+handle.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+end)
+sliderBar.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local relativeX = math.clamp(input.Position.X - sliderBar.AbsolutePosition.X,0,sliderBar.AbsoluteSize.X - handle.AbsoluteSize.X)
+		handle.Position = UDim2.new(0, relativeX,0,0)
+		local percent = handle.Position.X.Offset / (sliderBar.AbsoluteSize.X - handle.AbsoluteSize.X)
+		sliderLabel.Text = "Speed: "..string.format("%.1f",1 + percent*4)
+	end
+end)
+
+local function getSpeed()
+	local percent = handle.Position.X.Offset / (sliderBar.AbsoluteSize.X - handle.AbsoluteSize.X)
+	return 1 + percent*4
+end
+
+-- Start/Stop Button
+local startButton = Instance.new("TextButton")
+startButton.Size = UDim2.new(0,120,0,30)
+startButton.Position = UDim2.new(0,90,0,100)
+startButton.BackgroundColor3 = Color3.fromRGB(100,100,100)
+startButton.TextColor3 = Color3.fromRGB(255,255,255)
+startButton.Font = Enum.Font.GothamBold
+startButton.TextSize = 14
+startButton.Text = "Start Emoji Rain (CS)"
+startButton.Parent = frame
+
+local raining = false
+startButton.MouseButton1Click:Connect(function()
+	raining = not raining
+	startButton.Text = raining and "Stop Emoji Rain" or "Start Emoji Rain"
+end)
+
+-- Safe emojis (UTF-8)
+local emojis = {"🌟","💥","🔥","💧","🍀","🎉","⚡","🍎","🍌","🍇"}
+
+-- Active emojis
+local activeEmojis = {}
+
+RunService.RenderStepped:Connect(function(dt)
+	if raining then
+		if math.random() < 0.05 then
+			local emoji = Instance.new("TextLabel")
+			emoji.Size = UDim2.new(0,30,0,30)
+			emoji.Position = UDim2.new(0,math.random(0,screenGui.AbsoluteSize.X-30),0,-30)
+			emoji.BackgroundTransparency = 1
+			emoji.TextColor3 = Color3.fromRGB(255,255,255)
+			emoji.Font = Enum.Font.Gotham
+			emoji.TextSize = 30
+			emoji.Text = emojis[math.random(1,#emojis)]
+			emoji.Parent = screenGui
+			table.insert(activeEmojis, emoji)
+		end
+	end
+
+	local speed = getSpeed()*60
+	for i=#activeEmojis,1,-1 do
+		local e = activeEmojis[i]
+		if e then
+			e.Position = e.Position + UDim2.new(0,0,0,speed*dt)
+			if e.Position.Y.Offset > screenGui.AbsoluteSize.Y then
+				e:Destroy()
+				table.remove(activeEmojis,i)
+			end
+		end
+	end
+end)
+
+-- Keybind RightShift → GUI show/hide
+local guiVisible = true
+UIS.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.KeyCode == Enum.KeyCode.J then
+		guiVisible = not guiVisible
+		frame.Visible = guiVisible
+	end
+end)
